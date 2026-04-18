@@ -20,6 +20,31 @@ api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     api_key = st.text_input("Gemini APIキーを入力してください:", type="password")
 
+if api_key:
+    import google.generativeai as genai
+    genai.configure(api_key=api_key)
+    try:
+        import re
+        # APIキーを使って利用可能なモデル一覧を動的に取得
+        raw_models = [m.name.replace("models/", "") for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        
+        # モデル名に含まれるバージョン番号(例: 1.5, 2.5)を大きい順に並び替え（最新を上へ）
+        def _get_version(name):
+            match = re.search(r'gemini-(\d+\.\d+)', name)
+            return float(match.group(1)) if match else 0.0
+            
+        models = sorted(raw_models, key=_get_version, reverse=True)
+        
+        # デフォルトを選択
+        default_idx = next((i for i, m in enumerate(models) if "gemini-2.5-flash" == m or "gemini-2.5-flash" in m), 0)
+        selected_model = st.selectbox("✨ 使用するAIモデルを選択してください", models, index=default_idx)
+    except Exception as e:
+        st.warning("モデル一覧の取得に失敗しました。APIキーが正しいか確認してください。")
+        selected_model = "gemini-2.5-flash"
+else:
+    selected_model = "gemini-2.5-flash"
+    st.info("APIキーを入力すると、利用できる最新モデルの一覧から選択可能になります。")
+
 uploaded_file = st.file_uploader("動画ファイルをアップロードしてください (mp4, mov, mkv等)", type=["mp4", "mov", "avi", "mkv", "webm"])
 
 if uploaded_file is not None and api_key:
@@ -41,9 +66,9 @@ if uploaded_file is not None and api_key:
                 audio_path = extract_audio_from_video(temp_video_path)
                 
                 # 3. Geminiでの一括処理
-                st.write("✨ Gemini AIで「文字起こし・要約・やることリスト」を同時抽出中...")
+                st.write(f"✨ Gemini AI ({selected_model}) で「文字起こし・要約・やることリスト」を同時抽出中...")
                 st.write("（※音声の長さにより数十秒〜1分ほど待機します）")
-                extracted = process_audio_with_gemini(audio_path, api_key)
+                extracted = process_audio_with_gemini(audio_path, api_key, model_name=selected_model)
                 
                 status.update(label="処理が完了しました！", state="complete", expanded=False)
                 

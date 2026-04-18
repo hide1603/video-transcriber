@@ -2,9 +2,9 @@ import os
 import time
 import google.generativeai as genai
 
-def process_audio_with_gemini(audio_path: str, gemini_api_key: str) -> dict:
+def process_audio_with_gemini(audio_path: str, gemini_api_key: str, model_name: str = "gemini-2.5-flash") -> dict:
     """
-    Gemini 1.5 Flashモデルを使用して、音声ファイルから文字起こし・要約・やることリストを一括で抽出する。
+    Geminiモデルを使用して、音声ファイルから文字起こし・要約・やることリストを一括で抽出する。
     """
     if not gemini_api_key:
         raise ValueError("Google AI Studio (Gemini) APIキーが設定されていません。")
@@ -44,7 +44,7 @@ def process_audio_with_gemini(audio_path: str, gemini_api_key: str) -> dict:
 ）
 """
     
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    model = genai.GenerativeModel(model_name)
     
     try:
         response = model.generate_content([system_instruction, myfile])
